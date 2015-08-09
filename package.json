@@ -1,21 +1,22 @@
 {
-  "name": "jasmine-test",
+  "name": "million-project",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": ".\\node_modules\\.bin\\jasmine .\\dist\\spec.bundle.js"
+    "test": ".\\node_modules\\.bin\\jasmine .\\dist\\spec.bundle.js",
+    "postinstall": ".\\node_modules\\.bin\\gulp"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/thecotne/jasmine-test.git"
+    "url": "https://github.com/thecotne/million-project.git"
   },
   "author": "cotne nazarashvili <cotne.95@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/thecotne/jasmine-test/issues"
+    "url": "https://github.com/thecotne/million-project/issues"
   },
-  "homepage": "https://github.com/thecotne/jasmine-test",
+  "homepage": "https://github.com/thecotne/million-project",
   "devDependencies": {
     "babel-core": "^5.2.15",
     "babel-loader": "^5.0.0",
