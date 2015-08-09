@@ -91,3 +91,53 @@ function onNotificationChange() {
 		}, 50);
 	});
 }
+
+
+
+function getCurrentTab() {
+	return new Promise(resolve => chrome.windows.getCurrent({}, resolve));
+}
+
+function createHiddenWindow(url) {
+	return new Promise(resolve => {
+		chrome.windows.getCurrent({}, current => {
+			chrome.windows.create({
+				url,
+				focused: false,
+				top: 30000,
+				left: 30000,
+				width: 1,
+				height: 1,
+				type: "normal"
+			}, created => {
+				chrome.windows.update(current.id, {focused: true});
+				resolve(created);
+			})
+		})
+	})
+}
+
+function closeWindow(chromeWindow) {
+	chrome.windows.remove(chromeWindow.id);
+}
+
+function executeInHiddenWindow(chromeWindow, script) {
+	chrome.tabs.executeScript(chromeWindow.tabs[0].id, {
+		runAt: "document_end",
+		code: script
+	});
+}
+
+function makeScript(callback, args=null) {
+	return `(${callback})(${JSON.stringify(args)})`;
+}
+
+function joingroup(url) {
+	createHiddenWindow(url)
+	.then(hiddenWindow => {
+		executeInHiddenWindow(hiddenWindow, makeScript(joinCurrentGroup))
+		setTimeout(() => {
+			closeWindow(hiddenWindow);
+		}, 100);
+	});
+}
