@@ -1,4 +1,4 @@
-function args(data) {
+function queryString(data) {
 	var arr = [];
 	for(let key in data) {
 		arr.push(`${key}=${data[key]}`);
@@ -16,7 +16,7 @@ function addFriend({dtsg, gid, friend, uid}) {
 			console.log(data);
 		}
 	};
-	xhr.send(args({
+	xhr.send(queryString({
 		'__a': 1,
 		'fb_dtsg': dtsg,
 		'group_id': gid,
@@ -30,7 +30,7 @@ function addFriend({dtsg, gid, friend, uid}) {
 }
 
 function addFriends({dtsg, uid, gid}) {
-	var params = args({
+	var params = queryString({
 		'__a': 1,
 		'viewer': uid,
 		'token': Math.random(),
